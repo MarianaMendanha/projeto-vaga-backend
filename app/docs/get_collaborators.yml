@@ -1,0 +1,25 @@
+get:
+  tags:
+    - Collaborators
+  summary: Retrieve a list of collaborators in a department
+  description: This endpoint returns a list of collaborators for a specific department.
+  parameters:
+    - in: path
+      name: dept_id
+      required: true
+      type: integer
+      description: The ID of the department
+  responses:
+    200:
+      description: A list of collaborators
+      schema:
+        type: array
+        items:
+          type: object
+          properties:
+            full_name:
+              type: string
+              example: "Mariana Cruz"
+            have_dependents:
+              type: boolean
+              example: false

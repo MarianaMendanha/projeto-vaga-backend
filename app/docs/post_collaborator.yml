@@ -1,0 +1,32 @@
+swagger: "2.0"
+info:
+  title: Add Collaborator
+  description: Adiciona um novo colaborador a um departamento específico
+  version: "1.0"
+paths:
+  /departments/{dept_id}/collaborators:
+    post:
+      summary: Adicionar um colaborador
+      parameters:
+        - name: dept_id
+          in: path
+          required: true
+          type: integer
+          example: 1
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              full_name:
+                type: string
+                example: "Alice"
+              dependents:
+                type: boolean
+                example: false
+      responses:
+        201:
+          description: Colaborador adicionado com sucesso
+        400:
+          description: Erro na requisição
