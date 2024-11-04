@@ -2,7 +2,9 @@ from flask import Blueprint, render_template, jsonify, request
 from . import db
 from .models import Department, Collaborator
 from .services import DepartmentService, CollaboratorService
+from .schemas import DepartmentSchema, CollaboratorSchema
 from flasgger import swag_from
+from marshmallow import ValidationError
 
 api = Blueprint('api', __name__)
 
@@ -86,12 +88,7 @@ def get_collaborators(dept_id):
             'name': 'body',
             'in': 'body',
             'required': True,
-            'schema': {
-                'type': 'object',
-                'properties': {
-                    'name': {'type': 'string'}
-                }
-            }
+            'schema': DepartmentSchema().get_dict()
         }
     ],
     'responses': {
@@ -104,11 +101,15 @@ def get_collaborators(dept_id):
     }
 })
 def add_department():
+    schema = DepartmentSchema()
     data = request.get_json()
-    if 'name' not in data:
-        return {"error": "O nome do departamento é obrigatório."}, 400
+    try:
+        validated_data = schema.load(data)  # Validar os dados
+    except ValidationError as err:
+        return jsonify(err.messages), 400
 
-    new_department = DepartmentService.create_department(data['name'])
+    new_department = DepartmentService.create_department(
+        validated_data['name'])
     return jsonify({'message': 'Department added successfully!'}), 201
 
 
@@ -119,41 +120,12 @@ def add_department():
             'name': 'body',
             'in': 'body',
             'required': True,
-            'schema': {
-                'type': 'object',
-                'properties': {
-                    'full_name': {
-                        'type': 'string',
-                        'example': 'John Doe',
-                        'description': 'Nome completo do colaborador'
-                    },
-                    'department_id': {
-                        'type': 'integer',
-                        'example': 1,
-                        'description': 'ID do departamento ao qual o colaborador pertence'
-                    },
-                    'have_dependents': {
-                        'type': 'boolean',
-                        'example': True,
-                        'description': 'Indica se o colaborador tem dependentes'
-                    }
-                },
-                'required': ['full_name', 'department_id']
-            }
+            'schema': CollaboratorSchema().get_dict()
         }
     ],
     'responses': {
         201: {
-            'description': 'Colaborador criado com sucesso',
-            'schema': {
-                'type': 'object',
-                'properties': {
-                    'message': {
-                        'type': 'string',
-                        'example': 'Colaborador criado com sucesso'
-                    }
-                }
-            }
+            'description': 'Colaborador criado com sucesso'
         },
         400: {
             'description': 'Erro de validação'
@@ -161,13 +133,16 @@ def add_department():
     }
 })
 def create_collaborator():
+    schema = CollaboratorSchema()
     data = request.get_json()
-    if 'full_name' not in data or 'department_id' not in data:
-        return {"error": "Nome completo e ID do departamento são obrigatórios."}, 400
+    try:
+        validated_data = schema.load(data)  # Validar os dados
+    except ValidationError as err:
+        return jsonify(err.messages), 400
 
     new_collaborator = CollaboratorService.create_collaborator(
-        full_name=data['full_name'],
-        department_id=data['department_id'],
-        have_dependents=data.get('have_dependents', False)
+        full_name=validated_data['full_name'],
+        department_id=validated_data['department_id'],
+        have_dependents=validated_data.get('have_dependents', False)
     )
     return jsonify({'message': 'Collaborator created successfully'}), 201
