@@ -46,7 +46,7 @@ Para rodar a API localmente, siga os passos abaixo:
 
    ```bash
    git clone https://github.com/MarianaMendanha/projeto-vaga-backend.git
-   cd seu_repositorio
+   cd projeto-vaga-backend
    ```
 
 2. **Crie um ambiente virtual (opcional, mas recomendado):**
