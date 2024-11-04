@@ -4,10 +4,10 @@ Este projeto é uma API desenvolvida em Python utilizando Flask para gerenciar d
 
 ## Funcionalidades
 
-- **GET /departamentos:** Consulta todos os departamentos da ACMEVita.
-- **GET /departamentos/{id}/colaboradores:** Consulta todos os colaboradores de um departamento específico.
-- **POST /departamentos:** Adiciona um novo departamento à ACMEVita.
-- **POST /departamentos/{id}/colaboradores:** Adiciona um novo colaborador a um departamento específico.
+- **GET /departments:** Consulta todos os departamentos da ACMEVita.
+- **GET /departments/{id}/collaborators:** Consulta todos os colaboradores de um departamento específico.
+- **POST /department:** Adiciona um novo departamento à ACMEVita.
+- **POST /collaborator:** Adiciona um novo colaborador a um departamento específico.
 
 ## Documentação
 
