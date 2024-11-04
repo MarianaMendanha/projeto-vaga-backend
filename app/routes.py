@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, jsonify, request
 from . import db
 from .models import Department, Collaborator
+from .services import DepartmentService, CollaboratorService
 from flasgger import swag_from
 
 api = Blueprint('api', __name__)
@@ -34,7 +35,7 @@ def index_home():
 })
 def get_departments():
     try:
-        departments = Department.query.all()
+        departments = DepartmentService.get_all_departments()
         return jsonify([{'id': dept.id, 'name': dept.name} for dept in departments])
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -70,17 +71,12 @@ def get_departments():
     }
 })
 def get_collaborators(dept_id):
-    department = Department.query.get(dept_id)
-    if not department:
+    collaborators = CollaboratorService.get_collaborators_by_department(
+        dept_id)
+    if not collaborators:
         return jsonify({'message': 'Departamento não encontrado'}), 404
 
-    collaborators = Collaborator.query.filter_by(department_id=dept_id).all()
-    return jsonify([
-        {
-            'full_name': coll.full_name,
-            'have_dependents': bool(coll.have_dependents)
-        } for coll in collaborators
-    ])
+    return jsonify([{'full_name': coll.full_name, 'have_dependents': coll.have_dependents} for coll in collaborators])
 
 
 @api.route('/department', methods=['POST'])
@@ -112,11 +108,7 @@ def add_department():
     if 'name' not in data:
         return {"error": "O nome do departamento é obrigatório."}, 400
 
-    new_department = Department(name=data['name'])
-
-    db.session.add(new_department)
-    db.session.commit()
-
+    new_department = DepartmentService.create_department(data['name'])
     return jsonify({'message': 'Department added successfully!'}), 201
 
 
@@ -173,11 +165,9 @@ def create_collaborator():
     if 'full_name' not in data or 'department_id' not in data:
         return {"error": "Nome completo e ID do departamento são obrigatórios."}, 400
 
-    new_collaborator = Collaborator(
+    new_collaborator = CollaboratorService.create_collaborator(
         full_name=data['full_name'],
         department_id=data['department_id'],
         have_dependents=data.get('have_dependents', False)
     )
-    db.session.add(new_collaborator)
-    db.session.commit()
     return jsonify({'message': 'Collaborator created successfully'}), 201
