@@ -16,8 +16,8 @@ class DepartmentSchema(Schema):
 
 class CollaboratorSchema(Schema):
     full_name = fields.Str(required=True, validate=validate.Length(min=1))
-    have_dependents = fields.Bool(missing=False)
     department_id = fields.Int(required=True)
+    have_dependents = fields.Bool(missing=False)
 
     def get_dict(self):
         return {

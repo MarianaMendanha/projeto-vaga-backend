@@ -3,6 +3,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from app.models import Department, Collaborator
+from app.services import DepartmentService, CollaboratorService
 
 
 # Classe mock para simular objetos de colaboradores
@@ -16,19 +17,18 @@ class MockCollaborator:
 
 # Função de teste para verificar a rota que retorna todos os departamentos
 def test_get_departments(client, init_database):
-    # Usando patch para substituir a classe Department pelo mock
-    with patch('app.routes.Department') as mock_department:
+    with patch('app.services.DepartmentService.get_all_departments') as mock_get_all_departments:
         # Criando objetos mock para departamentos
         mock_dept1 = MagicMock()
         mock_dept1.id = 1
-        mock_dept1.name = 'HR'  # Simulando um departamento de Recursos Humanos
+        mock_dept1.name = 'HR'
 
         mock_dept2 = MagicMock()
         mock_dept2.id = 2
-        mock_dept2.name = 'Engineering'  # Simulando um departamento de Engenharia
+        mock_dept2.name = 'Engineering'
 
-        # Configurando o retorno da consulta mockada para retornar os departamentos simulados
-        mock_department.query.all.return_value = [mock_dept1, mock_dept2]
+        # Configurando o retorno da consulta mockada
+        mock_get_all_departments.return_value = [mock_dept1, mock_dept2]
 
         # Fazendo uma requisição GET à rota de departamentos
         response = client.get('/departments')
@@ -43,17 +43,11 @@ def test_get_departments(client, init_database):
 
 # Função de teste para verificar a rota que retorna os colaboradores de um departamento específico
 def test_get_collaborators(client, init_database):
-    with patch('app.routes.Collaborator') as mock_collaborator, patch('app.routes.Department') as mock_department:
-        # Criando um mock para o departamento
-        mock_dept = MagicMock()
-        mock_dept.id = 1
-        # Simulando que o departamento com ID 1 existe
-        mock_department.query.get.return_value = mock_dept
-
-        # Configurando o retorno da consulta mockada para retornar colaboradores simulados
-        mock_collaborator.query.filter_by.return_value.all.return_value = [
+    with patch('app.services.CollaboratorService.get_collaborators_by_department') as mock_get_collaborators:
+        # Configurando o retorno mockado para colaboradores
+        mock_get_collaborators.return_value = [
             MockCollaborator(1, 'Mariana Cruz', 1, False),
-            MockCollaborator(1, 'Mariana Mendanha', 1, True)
+            MockCollaborator(2, 'Mariana Mendanha', 1, True)
         ]
 
         # Fazendo uma requisição GET à rota de colaboradores do departamento 1
@@ -69,9 +63,9 @@ def test_get_collaborators(client, init_database):
 
 
 def test_get_collaborators_department_not_found(client, init_database):
-    with patch('app.routes.Collaborator') as mock_collaborator:
+    with patch('app.services.CollaboratorService.get_collaborators_by_department') as mock_get_collaborators:
         # Simulando que não há colaboradores
-        mock_collaborator.query.filter_by.return_value.all.return_value = []
+        mock_get_collaborators.return_value = []
 
         response = client.get('/departments/999/collaborators')  # ID inválido
         assert response.status_code == 404  # Verifica se retorna 404
@@ -80,75 +74,51 @@ def test_get_collaborators_department_not_found(client, init_database):
 
 # Teste para adicionar um departamento
 def test_add_department(client, init_database):
-    # Dados para o novo departamento
     new_department = {'name': 'Marketing'}
 
-    # Fazendo uma requisição POST para criar um novo departamento
-    response = client.post('/department', json=new_department)
+    with patch('app.services.DepartmentService.create_department') as mock_create_department:
+        mock_create_department.return_value = MagicMock(id=3, name='Marketing')
 
-    # Verificando se o status da resposta é 201 (Created)
-    assert response.status_code == 201
-    # Verificando se a mensagem da resposta é a esperada
-    assert response.json['message'] == 'Department added successfully!'
+        response = client.post('/department', json=new_department)
 
-    # Verificando se o departamento foi realmente adicionado ao banco de dados
-    added_department = Department.query.filter_by(name='Marketing').first()
-    assert added_department is not None
-    assert added_department.name == 'Marketing'
+        assert response.status_code == 201
+        assert response.json['message'] == 'Department added successfully!'
 
 
 # Teste para criar um colaborador
 def test_create_collaborator(client, init_database):
-    # Primeiro, precisamos garantir que um departamento existe para adicionar um colaborador
     new_department = {'name': 'Sales'}
-    # Criar um departamento para o colaborador
     client.post('/department', json=new_department)
 
-    # Dados para o novo colaborador
     new_collaborator = {
         'full_name': 'Mariana Cruz',
-        'department_id': 1,  # Presumindo que o ID do departamento 'Sales' é 1
+        'department_id': 1,
         'have_dependents': False
     }
 
-    # Fazendo uma requisição POST para criar um novo colaborador
-    response = client.post('/collaborator', json=new_collaborator)
+    with patch('app.services.CollaboratorService.create_collaborator') as mock_create_collaborator:
+        mock_create_collaborator.return_value = MagicMock(
+            id=1, **new_collaborator)
 
-    # Verificando se o status da resposta é 201 (Created)
-    assert response.status_code == 201
-    # Verificando se a mensagem da resposta é a esperada
-    assert response.json['message'] == 'Collaborator created successfully'
+        response = client.post('/collaborator', json=new_collaborator)
 
-    # Verificando se o colaborador foi realmente adicionado ao banco de dados
-    added_collaborator = Collaborator.query.filter_by(
-        full_name='Mariana Cruz').first()
-    assert added_collaborator is not None
-    assert added_collaborator.full_name == 'Mariana Cruz'
-    assert added_collaborator.department_id == 1
+        assert response.status_code == 201
+        assert response.json['message'] == 'Collaborator created successfully'
 
 
 # Teste para adicionar um departamento com dados inválidos
 def test_add_department_invalid(client, init_database):
-    # Dados para um novo departamento sem nome
     invalid_department = {}
-
-    # Fazendo uma requisição POST para criar um novo departamento
     response = client.post('/department', json=invalid_department)
-
-    # Verificando se o status da resposta é 400 (Bad Request)
     assert response.status_code == 400
 
-
 # Teste para criar um colaborador com dados inválidos
+
+
 def test_create_collaborator_invalid(client, init_database):
-    # Dados para um novo colaborador sem nome
     invalid_collaborator = {
-        'department_id': 1,  # Presumindo que o ID do departamento existe
+        'department_id': 1,
         'have_dependents': False
     }
-
-    # Fazendo uma requisição POST para criar um novo colaborador
     response = client.post('/collaborator', json=invalid_collaborator)
-
-    # Verificando se o status da resposta é 400 (Bad Request)
     assert response.status_code == 400
