@@ -82,6 +82,7 @@ C:.
 │   │   models.py             # Modelos de dados e definições do banco de dados
 │   │   routes.py             # Definição das rotas da API
 │   │   schemas.py            # Definições de esquemas para validação de dados
+│   │   services.py           # Definições de serviços para endpoints
 │   │   __init__.py           # Inicializa o pacote da aplicação
 │   │
 │   ├───docs                  # Documentação das rotas em formato YAML
